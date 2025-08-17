@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='utf-8'?>
+<component type="desktop-application">
+  <!--Created with jdAppStreamEdit 9.2-->
+  <id>io.github.rfrench3.ublue-updater</id>
+  <name>UBlue Updater</name>
+  <summary>Update your system</summary>
+  <developer id="io.github.rfrench3">
+    <name>Robert French</name>
+  </developer>
+  <metadata_license>MIT</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+  <description>
+    <p>This is a Qt GUI for the Universal Blue updater.</p>
+  </description>
+  <screenshots>
+    <screenshot type="default">
+      <image type="source">https://raw.githubusercontent.com/rfrench3/ublue-updater/v0.1/src/img/mainWindow.png</image>
+    </screenshot>
+    <screenshot>
+      <image type="source">https://raw.githubusercontent.com/rfrench3/ublue-updater/v0.1/src/img/applyWindow.png</image>
+    </screenshot>
+  </screenshots>
+  <releases>
+    <release version="0.1" date="2025-06-23" type="stable">
+      <description>
+        Description of the update features.
+      </description>
+    </release>
+  </releases>
+  <url type="bugtracker">https://github.com/rfrench3/ublue-updater/issues</url>
+  <url type="vcs-browser">https://github.com/rfrench3/ublue-updater</url>
+  <content_rating type="oars-1.1"/>
+  <launchable type="desktop-id">io.github.rfrench3.ublue-updater.desktop</launchable>
+  <branding>
+    <color type="primary" scheme_preference="light">#ff38fc</color>
+    <color type="primary" scheme_preference="dark">#8800ff</color>
+  </branding>
+</component>
