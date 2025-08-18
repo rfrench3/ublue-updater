@@ -37,9 +37,6 @@ def get_spinner_element() -> str:
     spinner_index = (spinner_index + 1) % len(braille_spinner)
     return element
 
-# Edit the .ui file using Qt Designer
-ui_main = os.path.join(DATA_DIR, "main.ui")
-
 # Worker thread for running shell scripts
 class ShellWorker(QThread):
     output_ready = Signal(str)
@@ -87,9 +84,10 @@ class ShellWorker(QThread):
 
 # Main window class that handles close events
 class UpdaterMainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, ui_main, app):
         super().__init__()
         self.logic = None  # type: MainWindow | None
+        self.app = app
         
         # Load the UI from the .ui file
         self.ui_widget = load_widget(ui_main)
@@ -98,7 +96,7 @@ class UpdaterMainWindow(QMainWindow):
         self.setWindowIcon(app_icon)
         
         # Adapt the window size based on the screen
-        screen = app.primaryScreen().availableGeometry()
+        screen = self.app.primaryScreen().availableGeometry()
         
         width = max(800, min(1200, int(screen.width() * 0.5)))
         height = max(600, min(800, int(screen.height() * 0.8)))
@@ -130,9 +128,10 @@ class UpdaterMainWindow(QMainWindow):
 
 # logic for the main window
 class MainWindow():
-    def __init__(self, window): 
+    def __init__(self, window, app): 
         self.window = window
         self.worker = None
+        self.app = app
 
         self.current_task: str = ''
         self.last_status_message: str = ''
@@ -156,7 +155,7 @@ class MainWindow():
         self.update.clicked.connect(self.activate_update)
         self.change_logs.clicked.connect(self.open_logs) 
         self.reboot.clicked.connect(self.reboot_system)
-        self.exit.clicked.connect(app.quit)
+        self.exit.clicked.connect(self.app.quit)
 
         # Reboot needs to be clicked twice before rebooting
         self._reboots_clicked = False
@@ -258,12 +257,20 @@ class MainWindow():
 
         
 
-# Logic that loads the main window
-app = QApplication([])
+def main():
+    # Edit the .ui file using Qt Designer
+    ui_main = os.path.join(DATA_DIR, "main.ui")
 
-window_main = UpdaterMainWindow()
-logic = MainWindow(window_main.ui_widget)
-window_main.logic = logic  # Give the window access to the logic
+    # Logic that loads the main window
+    app = QApplication([])
 
-window_main.show()
-app.exec()
+    window_main = UpdaterMainWindow(ui_main, app)
+    logic = MainWindow(window_main.ui_widget, app)
+    window_main.logic = logic  # Give the window access to the logic
+
+    window_main.show()
+    app.exec()
+
+
+if __name__ == "__main__":
+    main()

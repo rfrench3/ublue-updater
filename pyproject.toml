@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ublue-updater"
+version = "1.0.0"
+description = "Frontend utility for the Bazzite and Universal Blue updater"
+authors = [
+    { name = "rfrench3" }
+]
+license = {text = "GPL-3.0-only"}
+readme = "README.md"
+requires-python = ">=3.7"
+dependencies = [
+    "PySide6"
+]
+
+[project.scripts]
+ublue-updater = "src.main:main"
