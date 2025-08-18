@@ -7,7 +7,7 @@ Licensed under the GNU GPLv3 only. See LICENSE file in the project root for full
 
 #TODO:
 - closing the app during an update shouldn't be allowed, or should let the update run in the background
-- a spinny thing should be added so you know the process hasn't crashed
+- package into an RPM so it can be layered/integrated
 """
 
 
@@ -26,24 +26,17 @@ from PySide6.QtWidgets import QApplication, QPushButton, QTextBrowser, QStatusBa
 from PySide6.QtCore import QThread, Signal, QTimer
 from PySide6.QtGui import QFont
 import time
-import threading
 
 
 braille_spinner: list[str] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-spinner_element: str = '⠋'
-def background_loop():
-    while True:
-        # Example: print a spinner character every second
-        for char in braille_spinner:
-            global spinner_element
+spinner_index: int = 0
 
-            spinner_element = char
-
-            print(f"Spinner: {char}", end='\r')
-            time.sleep(0.25)
-
-# Start the loop in a separate thread
-threading.Thread(target=background_loop, daemon=True).start()
+def get_spinner_element() -> str:
+    """Get the current spinner element and advance to next"""
+    global spinner_index
+    element = braille_spinner[spinner_index]
+    spinner_index = (spinner_index + 1) % len(braille_spinner)
+    return element
 
 # Edit the .ui file using Qt Designer
 ui_main = os.path.join(DATA_DIR, "main.ui")
@@ -101,6 +94,7 @@ class MainWindow():
         self.worker = None
 
         self.current_task: str = ''
+        self.last_status_message: str = ''
 
         # connect ui elements to code
         self.update = self.window.findChild(QPushButton,"update")
@@ -112,6 +106,11 @@ class MainWindow():
 
         self.text.setFont(QFont("monospace"))
 
+        # Setup status bar spinner timer
+        self.status_timer = QTimer()
+        self.status_timer.timeout.connect(self.update_status_spinner)
+        self.status_timer.setInterval(250)  # 0.25 seconds
+
         # Connect actions to slots or functions
         self.update.clicked.connect(self.activate_update)
         self.change_logs.clicked.connect(self.open_logs) 
@@ -121,12 +120,21 @@ class MainWindow():
         # Reboot needs to be clicked twice before rebooting
         self._reboots_clicked = False
         
+    def update_status_spinner(self):
+        """Update the status bar with spinner when a task is running"""
+        if self.current_task:
+            self.status.showMessage(f'{get_spinner_element()} {self.last_status_message}')
+        
     def activate_update(self):
         """Updates the system."""
 
         self.current_task = 'update'
+        self.last_status_message = 'Starting update...'
         
         self.text.clear()
+        
+        # Start the status spinner timer
+        self.status_timer.start()
         
         # Disable update button while running
         self.update.setEnabled(False)
@@ -164,8 +172,12 @@ class MainWindow():
         """Opens the change logs using ujust changelogs."""
 
         self.current_task = 'changelogs'
+        self.last_status_message = 'Loading changelogs...'
 
         self.text.clear()
+        
+        # Start the status spinner timer
+        self.status_timer.start()
         
         script_command = "ujust changelogs"
         
@@ -181,12 +193,16 @@ class MainWindow():
     def append_output(self, line):
         """Append a line of output to the text browser"""
         self.text.append(line)
-        self.status.showMessage(f'{spinner_element} {line}')
+        # Store the message for the spinner timer to use
+        self.last_status_message = line
 
         
     
     def script_finished(self):
         """Called when the script execution is complete."""
+        # Stop the spinner timer
+        self.status_timer.stop()
+        
         self.status.showMessage("Complete!")
         if self.current_task == 'update':
             self.update.setText("Update Complete!")
