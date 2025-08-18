@@ -4,6 +4,10 @@
 Created in 2025 by rfrench3 (TealMango) - https://github.com/rfrench3
 
 Licensed under the GNU GPLv3 only. See LICENSE file in the project root for full license information.
+
+#TODO:
+- closing the app during an update shouldn't be allowed, or should let the update run in the background
+- a spinny thing should be added so you know the process hasn't crashed
 """
 
 
@@ -18,7 +22,7 @@ from program_file_locator import DATA_DIR
 from widget_manager import app_icon, load_widget, load_message_box
 
 #PySide6, Qt Designer UI files
-from PySide6.QtWidgets import QApplication, QPushButton, QTextBrowser, QStatusBar #Import widgets here as needed
+from PySide6.QtWidgets import QApplication, QPushButton, QTextBrowser, QStatusBar
 from PySide6.QtCore import QThread, Signal
 from PySide6.QtGui import QFont
 
@@ -42,14 +46,26 @@ class ShellWorker(QThread):
                 shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
+                stdin=subprocess.PIPE,
                 universal_newlines=True,
                 bufsize=1
             )
             
             # Read output line by line as it comes
             if process.stdout:
-                for line in process.stdout:
-                    self.output_ready.emit(line.rstrip())
+                while True:
+                    line = process.stdout.readline()
+                    if not line:
+                        break
+                    
+                    line = line.rstrip()
+                    self.output_ready.emit(line)
+                    
+                    # Auto-respond to quit prompt
+                    if "(Q)uit" in line:
+                        #TODO: make the process end gracefully, this currently causes no issues though
+                        process.terminate()
+                        break
             
             process.wait()
             self.finished_signal.emit()
@@ -92,10 +108,13 @@ class MainWindow():
         
         # Disable update button while running
         self.update.setEnabled(False)
+        self.change_logs.setEnabled(False)
+        self.exit.setEnabled(False)
+
         self.update.setText("Updating...")
         
         # Create and start worker thread
-        self.worker = ShellWorker("flatpak update -y") #TODO: use ujust update when ready
+        self.worker = ShellWorker("ujust update") #TODO: use ujust update when ready
         self.worker.output_ready.connect(self.append_output)
         self.worker.finished_signal.connect(self.script_finished)
         self.worker.start()
@@ -142,6 +161,8 @@ class MainWindow():
         if self.current_task == 'update':
             self.update.setText("Update Complete!")
             self.reboot.setEnabled(True)
+            self.change_logs.setEnabled(True)
+            self.exit.setEnabled(True)
         elif self.current_task == 'changelogs':
             cursor = self.text.textCursor()
             cursor.movePosition(cursor.MoveOperation.Start)
