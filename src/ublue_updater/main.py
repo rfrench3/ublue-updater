@@ -7,18 +7,16 @@ Licensed under the GNU GPLv3 only. See LICENSE file in the project root for full
 
 #TODO:
 - package into an RPM so it can be layered/integrated
+- set a better icon
+- get colors working like they do in the terminal
 """
 
 
-
-import sys
 import os
 import subprocess
 
-# locating other application files
-sys.path.insert(0, "/app/share/ublue-updater") # flatpak path
-from program_file_locator import DATA_DIR
-from widget_manager import app_icon, load_widget
+from ublue_updater.program_file_locator import DATA_DIR
+from ublue_updater.widget_manager import app_icon, load_widget
 
 #PySide6, Qt Designer UI files
 from PySide6.QtWidgets import QApplication, QPushButton, QTextBrowser, QStatusBar, QMainWindow, QMessageBox
