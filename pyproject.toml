@@ -7,7 +7,7 @@ name = "ublue-updater"
 version = "1.0.0"
 description = "Frontend utility for the Bazzite and Universal Blue updater"
 authors = [
-    { name = "rfrench3", email = "rfrench3@github.com" }
+    { name = "Robert French", email = "frenchrobertm@outlook.com" }
 ]
 license = { file = "LICENSE" }
 readme = "README.md"
