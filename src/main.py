@@ -6,7 +6,6 @@ Created in 2025 by rfrench3 (TealMango) - https://github.com/rfrench3
 Licensed under the GNU GPLv3 only. See LICENSE file in the project root for full license information.
 
 #TODO:
-- closing the app during an update shouldn't be allowed, or should let the update run in the background
 - package into an RPM so it can be layered/integrated
 """
 
@@ -22,7 +21,7 @@ from program_file_locator import DATA_DIR
 from widget_manager import app_icon, load_widget
 
 #PySide6, Qt Designer UI files
-from PySide6.QtWidgets import QApplication, QPushButton, QTextBrowser, QStatusBar
+from PySide6.QtWidgets import QApplication, QPushButton, QTextBrowser, QStatusBar, QMainWindow, QMessageBox
 from PySide6.QtCore import QThread, Signal, QTimer
 from PySide6.QtGui import QFont
 import time
@@ -86,8 +85,50 @@ class ShellWorker(QThread):
             self.output_ready.emit(f"Error running script: {str(e)}")
             self.finished_signal.emit()
 
-# logic for the main window
+# Main window class that handles close events
+class UpdaterMainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.logic = None  # type: MainWindow | None
+        
+        # Load the UI from the .ui file
+        self.ui_widget = load_widget(ui_main)
+        self.setCentralWidget(self.ui_widget)
+        self.setWindowTitle("System Update")
+        self.setWindowIcon(app_icon)
+        
+        # Adapt the window size based on the screen
+        screen = app.primaryScreen().availableGeometry()
+        
+        width = max(800, min(1200, int(screen.width() * 0.5)))
+        height = max(600, min(800, int(screen.height() * 0.8)))
+        
+        self.resize(width, height)
+        
+        # Center the window on screen
+        self.move(
+            (screen.width() - width) // 2,
+            (screen.height() - height) // 2
+        )
+        
+    def closeEvent(self, event):
+        """Handle window close event - prevent closing during updates"""
+        if self.logic and (self.logic.current_task == 'update'):
+            # Prevent closing during active tasks
+            QMessageBox.warning(
+                self,
+                "Update in Progress",
+                f"Cannot close the window while system update is running.\n\n"
+                "Please wait for the operation to complete before closing.",
+                QMessageBox.StandardButton.Ok
+            )
+            event.ignore()
+            return
+        
+        # Allow the window to close when no task is running
+        event.accept()
 
+# logic for the main window
 class MainWindow():
     def __init__(self, window): 
         self.window = window
@@ -220,12 +261,9 @@ class MainWindow():
 # Logic that loads the main window
 app = QApplication([])
 
-window_main = load_widget(
-    ui_main,
-    "System Update",
-    app_icon # defaults to app_icon if not specified, this only needs to be set for custom icons
-    )
-logic = MainWindow(window_main)
+window_main = UpdaterMainWindow()
+logic = MainWindow(window_main.ui_widget)
+window_main.logic = logic  # Give the window access to the logic
 
 window_main.show()
 app.exec()
