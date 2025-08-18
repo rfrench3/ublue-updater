@@ -19,7 +19,7 @@ import subprocess
 # locating other application files
 sys.path.insert(0, "/app/share/ublue-updater") # flatpak path
 from program_file_locator import DATA_DIR
-from widget_manager import app_icon, load_widget, load_message_box
+from widget_manager import app_icon, load_widget
 
 #PySide6, Qt Designer UI files
 from PySide6.QtWidgets import QApplication, QPushButton, QTextBrowser, QStatusBar
