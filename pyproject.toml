@@ -7,14 +7,22 @@ name = "ublue-updater"
 version = "1.0.0"
 description = "Frontend utility for the Bazzite and Universal Blue updater"
 authors = [
-    { name = "rfrench3" }
+    { name = "rfrench3", email = "rfrench3@github.com" }
 ]
-license = {text = "GPL-3.0-only"}
+license = { file = "LICENSE" }
 readme = "README.md"
 requires-python = ">=3.7"
 dependencies = [
     "PySide6"
 ]
 
+[project.urls]
+Homepage = "https://github.com/rfrench3/ublue-updater"
+Repository = "https://github.com/rfrench3/ublue-updater"
+
+[tool.setuptools]
+packages = ["ublue_updater"]
+package-dir = {"" = "src"}
+
 [project.scripts]
-ublue-updater = "src.main:main"
+ublue-updater = "ublue_updater.main:main"
