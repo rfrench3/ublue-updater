@@ -14,6 +14,7 @@ Licensed under the GNU GPLv3 only. See LICENSE file in the project root for full
 
 import os
 import subprocess
+import importlib.resources
 
 from ublue_updater.program_file_locator import DATA_DIR
 from ublue_updater.widget_manager import app_icon, load_widget
@@ -262,7 +263,10 @@ def main():
     # Logic that loads the main window
     app = QApplication([])
 
-    window_main = UpdaterMainWindow(ui_main, app)
+    with importlib.resources.path("ublue_updater", "main.ui") as ui_main_path:
+        # ui_main_path is now the correct path to main.ui in your installed package
+        window_main = UpdaterMainWindow(str(ui_main_path), app)
+
     logic = MainWindow(window_main.ui_widget, app)
     window_main.logic = logic  # Give the window access to the logic
 
