@@ -25,6 +25,7 @@ from widget_manager import app_icon, load_widget, load_message_box
 from PySide6.QtWidgets import QApplication, QPushButton, QTextBrowser, QStatusBar
 from PySide6.QtCore import QThread, Signal
 from PySide6.QtGui import QFont
+import time
 
 # Edit the .ui file using Qt Designer
 ui_main = os.path.join(DATA_DIR, "main.ui")
@@ -98,6 +99,9 @@ class MainWindow():
         self.change_logs.clicked.connect(self.open_logs) 
         self.reboot.clicked.connect(self.reboot_system)
         self.exit.clicked.connect(app.quit)
+
+        # Reboot needs to be clicked twice before rebooting
+        self._reboots_clicked = False
         
     def activate_update(self):
         """Updates the system."""
@@ -120,9 +124,17 @@ class MainWindow():
         self.worker.start()
     
     def reboot_system(self):
-        """Reboots the system so the updates can apply."""
+        """Reboots the system on second click so the updates can apply."""
+
+        if not self._reboots_clicked:
+            self._reboots_clicked = True
+            self.reboot.setText("Click again to confirm")
+            return
+
+
         self.reboot.setEnabled(False)
         self.reboot.setText("Rebooting...")
+        time.sleep(1)
         try:
             subprocess.Popen(["systemctl", "reboot"])
         except Exception as e:
