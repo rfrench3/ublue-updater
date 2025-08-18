@@ -24,5 +24,8 @@ Repository = "https://github.com/rfrench3/ublue-updater"
 packages = ["ublue_updater"]
 package-dir = {"" = "src"}
 
+[tool.setuptools.package-data]
+ublue_updater = ["main.ui"]
+
 [project.scripts]
 ublue-updater = "ublue_updater.main:main"

@@ -12,11 +12,9 @@ Licensed under the GNU GPLv3 only. See LICENSE file in the project root for full
 """
 
 
-import os
 import subprocess
 import importlib.resources
 
-from ublue_updater.program_file_locator import DATA_DIR
 from ublue_updater.widget_manager import app_icon, load_widget
 
 #PySide6, Qt Designer UI files
@@ -257,9 +255,6 @@ class MainWindow():
         
 
 def main():
-    # Edit the .ui file using Qt Designer
-    ui_main = os.path.join(DATA_DIR, "main.ui")
-
     # Logic that loads the main window
     app = QApplication([])
 
