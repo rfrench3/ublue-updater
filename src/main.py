@@ -23,9 +23,27 @@ from widget_manager import app_icon, load_widget
 
 #PySide6, Qt Designer UI files
 from PySide6.QtWidgets import QApplication, QPushButton, QTextBrowser, QStatusBar
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtCore import QThread, Signal, QTimer
 from PySide6.QtGui import QFont
 import time
+import threading
+
+
+braille_spinner: list[str] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+spinner_element: str = '⠋'
+def background_loop():
+    while True:
+        # Example: print a spinner character every second
+        for char in braille_spinner:
+            global spinner_element
+
+            spinner_element = char
+
+            print(f"Spinner: {char}", end='\r')
+            time.sleep(0.25)
+
+# Start the loop in a separate thread
+threading.Thread(target=background_loop, daemon=True).start()
 
 # Edit the .ui file using Qt Designer
 ui_main = os.path.join(DATA_DIR, "main.ui")
@@ -163,7 +181,7 @@ class MainWindow():
     def append_output(self, line):
         """Append a line of output to the text browser"""
         self.text.append(line)
-        self.status.showMessage(line)
+        self.status.showMessage(f'{spinner_element} {line}')
 
         
     
