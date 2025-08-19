@@ -9,6 +9,9 @@ Licensed under the GNU GPLv3 only. See LICENSE file in the project root for full
 - package into an RPM so it can be layered/integrated
 - set a better icon
 - get colors working like they do in the terminal
+
+~/Code_Projects/ublue-updater/.venv/bin/ublue-updater
+
 """
 
 
