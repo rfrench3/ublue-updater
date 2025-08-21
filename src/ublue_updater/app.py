@@ -18,7 +18,7 @@ Licensed under the GNU GPLv3 only. See LICENSE file in the project root for full
 import subprocess
 import importlib.resources
 
-from ublue_updater.widget_manager import app_icon, load_widget
+from .widget_manager import app_icon, load_widget
 
 #PySide6, Qt Designer UI files
 from PySide6.QtWidgets import QApplication, QPushButton, QTextBrowser, QStatusBar, QMainWindow, QMessageBox
