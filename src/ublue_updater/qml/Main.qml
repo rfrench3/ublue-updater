@@ -13,12 +13,56 @@ Kirigami.ApplicationWindow {
     height: 600
 
     // Window title
-    title: i18nc("@title:window", "System Update")
+    title: "System Update"
+    
+    // Handle close events - prevent closing while tasks are running
+    onClosing: function(close) {
+        if (backend && !backend.can_close_app()) {
+            close.accepted = false
+        }
+    }
+
+    // Connect to popup message signal
+    Connections {
+        target: backend
+        function onShowPopupMessage(message) {
+            messageDialog.text = message
+            messageDialog.open()
+        }
+    }
+
+    // Popup dialog for messages
+    Controls.Dialog {
+        id: messageDialog
+        title: "System Updater"
+        standardButtons: Controls.Dialog.Ok
+        anchors.centerIn: parent
+        width: Math.max(400, messageLabel.implicitWidth + 60)
+        height: Math.max(150, messageLabel.implicitHeight + 100)
+        
+        property alias text: messageLabel.text
+        
+        Controls.Label {
+            id: messageLabel
+            wrapMode: Text.WordWrap
+            width: parent.width - 20
+            anchors.centerIn: parent
+        }
+    }
 
     // Set the first page that will be loaded when the app opens
     pageStack.initialPage: Kirigami.Page {
+        globalToolBarStyle: Kirigami.ApplicationHeaderStyle.None
+        padding: Kirigami.Units.smallSpacing
+        topPadding: Kirigami.Units.smallSpacing
+        bottomPadding: Kirigami.Units.smallSpacing
+        leftPadding: Kirigami.Units.smallSpacing
+        rightPadding: Kirigami.Units.smallSpacing
+        
         ColumnLayout {
             anchors.fill: parent
+            anchors.margins: Kirigami.Units.smallSpacing
+            spacing: Kirigami.Units.smallSpacing
 
             Controls.ScrollView {
                 Layout.fillWidth: true
@@ -27,7 +71,7 @@ Kirigami.ApplicationWindow {
                 Controls.TextArea {
                     id: outputText
                     readOnly: true
-                    wrapMode: TextArea.Wrap
+                    wrapMode: Controls.TextArea.Wrap
                     text: backend ? backend.outputText : "Output will appear here..."
                     background: Rectangle {
                         color: Kirigami.Theme.backgroundColor
@@ -45,6 +89,7 @@ Kirigami.ApplicationWindow {
                 Controls.Button {
                     text: "Change Logs"
                     Layout.fillWidth: true
+                    enabled: backend ? !backend.isRunning : false
                     onClicked: {
                         if (backend) backend.open_logs()
                     }
@@ -53,6 +98,7 @@ Kirigami.ApplicationWindow {
                 Controls.Button {
                     text: "Update"
                     Layout.fillWidth: true
+                    enabled: backend ? !backend.isRunning : false
                     onClicked: {
                         if (backend) backend.activate_update()
                     }
@@ -61,6 +107,7 @@ Kirigami.ApplicationWindow {
                 Controls.Button {
                     text: "Apply Update (Reboot)"
                     Layout.fillWidth: true
+                    enabled: backend ? (!backend.isRunning && backend.updateCompleted) : false
                     onClicked: {
                         if (backend) backend.reboot_system()
                     }
@@ -69,6 +116,7 @@ Kirigami.ApplicationWindow {
                 Controls.Button {
                     text: "Exit"
                     Layout.fillWidth: true
+                    enabled: backend ? !backend.isRunning : false
                     onClicked: {
                         if (backend) backend.exit_app()
                     }

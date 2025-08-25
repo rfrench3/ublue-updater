@@ -22,7 +22,7 @@ import os
 import signal
 
 #PySide6, QML
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QMessageBox
 from PySide6.QtQuick import QQuickView
 from PySide6.QtCore import QThread, Signal, QTimer, QObject, Property, Slot
 import time
@@ -40,6 +40,16 @@ def get_spinner_element() -> str:
     element = braille_spinner[spinner_index]
     spinner_index = (spinner_index + 1) % len(braille_spinner)
     return element
+
+
+def load_message_box(parent_window,title:str,  text:str,  icon:QMessageBox.Icon=QMessageBox.Icon.Information,  standard_buttons:QMessageBox.StandardButton=QMessageBox.StandardButton.Ok) -> QMessageBox.StandardButton:
+    """Loads a QMessageBox, returns the result of exec()."""
+    msg = QMessageBox(parent_window)
+    msg.setIcon(icon)
+    msg.setWindowTitle(title)
+    msg.setText(text)
+    msg.setStandardButtons(standard_buttons)
+    return msg.exec() #type:ignore
 
 # Worker thread for running shell scripts
 class ShellWorker(QThread):
@@ -86,8 +96,6 @@ class ShellWorker(QThread):
             self.output_ready.emit(f"Error running script: {str(e)}")
             self.finished_signal.emit()
 
-# QML_ELEMENT will be available in QtQml import
-
 class SystemUpdater(QObject):
     """Backend class that will be exposed to QML"""
     
@@ -95,6 +103,9 @@ class SystemUpdater(QObject):
     outputChanged = Signal(str)
     taskFinished = Signal()
     statusChanged = Signal(str)
+    isRunningChanged = Signal(bool)
+    updateCompletedChanged = Signal(bool)
+    showPopupMessage = Signal(str)
     
     def __init__(self):
         super().__init__()
@@ -102,6 +113,8 @@ class SystemUpdater(QObject):
         self.current_task: str = ''
         self.last_status_message: str = ''
         self._output_text: str = ''
+        self._is_running: bool = False
+        self._update_completed: bool = False
         
         # Setup status bar spinner timer
         self.status_timer = QTimer()
@@ -119,7 +132,27 @@ class SystemUpdater(QObject):
             self._output_text = text
             self.outputChanged.emit(text)
     
-    outputText = Property(str, _get_output_text, _set_output_text)
+    outputText = Property(str, _get_output_text, _set_output_text, notify=outputChanged)
+    
+    def _get_is_running(self):
+        return self._is_running
+    
+    def _set_is_running(self, running):
+        if self._is_running != running:
+            self._is_running = running
+            self.isRunningChanged.emit(running)
+    
+    isRunning = Property(bool, _get_is_running, _set_is_running, notify=isRunningChanged)
+    
+    def _get_update_completed(self):
+        return self._update_completed
+    
+    def _set_update_completed(self, completed):
+        if self._update_completed != completed:
+            self._update_completed = completed
+            self.updateCompletedChanged.emit(completed)
+    
+    updateCompleted = Property(bool, _get_update_completed, _set_update_completed, notify=updateCompletedChanged)
         
     def update_status_spinner(self):
         """Update the status with spinner when a task is running"""
@@ -132,6 +165,7 @@ class SystemUpdater(QObject):
         """Updates the system."""
         self.current_task = 'update'
         self.last_status_message = 'Starting update...'
+        self._set_is_running(True)
         
         self._set_output_text('')
         
@@ -164,6 +198,7 @@ class SystemUpdater(QObject):
         """Opens the change logs using ujust changelogs."""
         self.current_task = 'changelogs'
         self.last_status_message = 'Loading changelogs...'
+        self._set_is_running(True)
 
         self._set_output_text('')
         
@@ -181,7 +216,19 @@ class SystemUpdater(QObject):
     @Slot()
     def exit_app(self):
         """Exit the application."""
+        # Don't allow exit while tasks are running
+        if self._is_running:
+            self.showPopupMessage.emit("Cannot close while a task is running. Please wait for completion.")
+            return
         QApplication.quit()
+    
+    @Slot(result=bool)
+    def can_close_app(self):
+        """Check if the app can be closed (no tasks running)."""
+        if self._is_running:
+            self.showPopupMessage.emit("Cannot close while a task is running. Please wait for completion.")
+            return False
+        return True
 
     def append_output(self, line):
         """Append a line of output to the text"""
@@ -200,8 +247,10 @@ class SystemUpdater(QObject):
         self.statusChanged.emit("Complete!")
         if self.current_task == 'update':
             self.append_output("Update Complete!")
+            self._set_update_completed(True)
         
         self.current_task = ''
+        self._set_is_running(False)
         self.taskFinished.emit()
 
 def main():
