@@ -10,21 +10,25 @@ Licensed under the GNU GPLv3 only. See LICENSE file in the project root for full
 - set a better icon
 - get colors working like they do in the terminal
 
-~/Code_Projects/ublue-updater/.venv/bin/ublue-updater
+IN KDE NEON DISTROBOX WITH PYSIDE6 INSTALLED: python3 -m src.ublue_updater.app
 
 """
 
 
 import subprocess
 import importlib.resources
+import sys
+import os
+import signal
 
-from .widget_manager import app_icon, load_widget
-
-#PySide6, Qt Designer UI files
-from PySide6.QtWidgets import QApplication, QPushButton, QTextBrowser, QStatusBar, QMainWindow, QMessageBox
-from PySide6.QtCore import QThread, Signal, QTimer
-from PySide6.QtGui import QFont
+#PySide6, QML
+from PySide6.QtWidgets import QApplication
+from PySide6.QtQuick import QQuickView
+from PySide6.QtCore import QThread, Signal, QTimer, QObject, Property, Slot
 import time
+from PySide6.QtGui import QGuiApplication
+from PySide6.QtCore import QUrl
+from PySide6.QtQml import QQmlApplicationEngine
 
 
 braille_spinner: list[str] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
@@ -82,139 +86,86 @@ class ShellWorker(QThread):
             self.output_ready.emit(f"Error running script: {str(e)}")
             self.finished_signal.emit()
 
-# Main window class that handles close events
-class UpdaterMainWindow(QMainWindow):
-    def __init__(self, ui_main, app):
+# QML_ELEMENT will be available in QtQml import
+
+class SystemUpdater(QObject):
+    """Backend class that will be exposed to QML"""
+    
+    # Signals to communicate with QML
+    outputChanged = Signal(str)
+    taskFinished = Signal()
+    statusChanged = Signal(str)
+    
+    def __init__(self):
         super().__init__()
-        self.logic = None  # type: MainWindow | None
-        self.app = app
-        
-        # Load the UI from the .ui file
-        self.ui_widget = load_widget(ui_main)
-        self.setCentralWidget(self.ui_widget)
-        self.setWindowTitle("System Update")
-        self.setWindowIcon(app_icon)
-        
-        # Adapt the window size based on the screen
-        screen = self.app.primaryScreen().availableGeometry()
-        
-        width = max(800, min(1200, int(screen.width() * 0.5)))
-        height = max(600, min(800, int(screen.height() * 0.8)))
-        
-        self.resize(width, height)
-        
-        # Center the window on screen
-        self.move(
-            (screen.width() - width) // 2,
-            (screen.height() - height) // 2
-        )
-        
-    def closeEvent(self, event):
-        """Handle window close event - prevent closing during updates"""
-        if self.logic and (self.logic.current_task == 'update'):
-            # Prevent closing during active tasks
-            QMessageBox.warning(
-                self,
-                "Update in Progress",
-                f"Cannot close the window while system update is running.\n\n"
-                "Please wait for the operation to complete before closing.",
-                QMessageBox.StandardButton.Ok
-            )
-            event.ignore()
-            return
-        
-        # Allow the window to close when no task is running
-        event.accept()
-
-# logic for the main window
-class MainWindow():
-    def __init__(self, window, app): 
-        self.window = window
         self.worker = None
-        self.app = app
-
         self.current_task: str = ''
         self.last_status_message: str = ''
-
-        # connect ui elements to code
-        self.update = self.window.findChild(QPushButton,"update")
-        self.change_logs = self.window.findChild(QPushButton,"change_logs")
-        self.reboot = self.window.findChild(QPushButton,"reboot")
-        self.exit = self.window.findChild(QPushButton,"exit")
-        self.text = self.window.findChild(QTextBrowser,"text")
-        self.status = self.window.findChild(QStatusBar,"statusbar")
-
-        self.text.setFont(QFont("monospace"))
-
+        self._output_text: str = ''
+        
         # Setup status bar spinner timer
         self.status_timer = QTimer()
         self.status_timer.timeout.connect(self.update_status_spinner)
         self.status_timer.setInterval(250)  # 0.25 seconds
-
-        # Connect actions to slots or functions
-        self.update.clicked.connect(self.activate_update)
-        self.change_logs.clicked.connect(self.open_logs) 
-        self.reboot.clicked.connect(self.reboot_system)
-        self.exit.clicked.connect(self.app.quit)
-
+        
         # Reboot needs to be clicked twice before rebooting
         self._reboots_clicked = False
+    
+    def _get_output_text(self):
+        return self._output_text
+    
+    def _set_output_text(self, text):
+        if self._output_text != text:
+            self._output_text = text
+            self.outputChanged.emit(text)
+    
+    outputText = Property(str, _get_output_text, _set_output_text)
         
     def update_status_spinner(self):
-        """Update the status bar with spinner when a task is running"""
+        """Update the status with spinner when a task is running"""
         if self.current_task:
-            self.status.showMessage(f'{get_spinner_element()} {self.last_status_message}')
-        
+            status_msg = f'{get_spinner_element()} {self.last_status_message}'
+            self.statusChanged.emit(status_msg)
+    
+    @Slot()
     def activate_update(self):
         """Updates the system."""
-
         self.current_task = 'update'
         self.last_status_message = 'Starting update...'
         
-        self.text.clear()
+        self._set_output_text('')
         
         # Start the status spinner timer
         self.status_timer.start()
         
-        # Disable update button while running
-        self.update.setEnabled(False)
-        self.change_logs.setEnabled(False)
-        self.exit.setEnabled(False)
-
-        self.update.setText("Updating...")
-        
         # Create and start worker thread
-        self.worker = ShellWorker("ujust update") #TODO: use ujust update when ready
+        self.worker = ShellWorker("ujust update")
         self.worker.output_ready.connect(self.append_output)
         self.worker.finished_signal.connect(self.script_finished)
         self.worker.start()
     
+    @Slot()
     def reboot_system(self):
         """Reboots the system on second click so the updates can apply."""
-
         if not self._reboots_clicked:
             self._reboots_clicked = True
-            self.reboot.setText("Click again to confirm")
+            self.append_output("Click reboot again to confirm...")
             return
 
-
-        self.reboot.setEnabled(False)
-        self.reboot.setText("Rebooting...")
+        self.append_output("Rebooting system...")
         time.sleep(1)
         try:
             subprocess.Popen(["systemctl", "reboot"])
         except Exception as e:
             self.append_output(f"Error rebooting: {str(e)}")
-            self.reboot.setEnabled(True)
-            self.reboot.setText("Reboot")
 
+    @Slot()
     def open_logs(self):
         """Opens the change logs using ujust changelogs."""
-
         self.current_task = 'changelogs'
         self.last_status_message = 'Loading changelogs...'
 
-        self.text.clear()
+        self._set_output_text('')
         
         # Start the status spinner timer
         self.status_timer.start()
@@ -227,49 +178,57 @@ class MainWindow():
         self.worker.finished_signal.connect(self.script_finished)
         self.worker.start()
 
-
-    # Used by QThread/Signal
+    @Slot()
+    def exit_app(self):
+        """Exit the application."""
+        QApplication.quit()
 
     def append_output(self, line):
-        """Append a line of output to the text browser"""
-        self.text.append(line)
+        """Append a line of output to the text"""
+        current_text = self._get_output_text()
+        new_text = current_text + line + "\n"
+        self._set_output_text(new_text)
+        
         # Store the message for the spinner timer to use
         self.last_status_message = line
-
-        
     
     def script_finished(self):
         """Called when the script execution is complete."""
         # Stop the spinner timer
         self.status_timer.stop()
         
-        self.status.showMessage("Complete!")
+        self.statusChanged.emit("Complete!")
         if self.current_task == 'update':
-            self.update.setText("Update Complete!")
-            self.reboot.setEnabled(True)
-            self.change_logs.setEnabled(True)
-            self.exit.setEnabled(True)
-        elif self.current_task == 'changelogs':
-            cursor = self.text.textCursor()
-            cursor.movePosition(cursor.MoveOperation.Start)
-            self.text.setTextCursor(cursor)
-        self.current_task = ''
-
+            self.append_output("Update Complete!")
         
+        self.current_task = ''
+        self.taskFinished.emit()
 
 def main():
     # Logic that loads the main window
-    app = QApplication([])
+    app = QApplication(sys.argv)
 
-    with importlib.resources.path("ublue_updater", "main.ui") as ui_main_path:
-        # ui_main_path is now the correct path to main.ui in your installed package
-        window_main = UpdaterMainWindow(str(ui_main_path), app)
+    # Create QML engine and load QML file
+    engine = QQmlApplicationEngine()
+    
+    if not os.environ.get("QT_QUICK_CONTROLS_STYLE"):
+        os.environ["QT_QUICK_CONTROLS_STYLE"] = "org.kde.desktop"
 
-    logic = MainWindow(window_main.ui_widget, app)
-    window_main.logic = logic  # Give the window access to the logic
 
-    window_main.show()
-    app.exec()
+    # Create and register the backend instance
+    backend = SystemUpdater()
+    engine.rootContext().setContextProperty("backend", backend)
+    
+    #script_dir = os.path.dirname(os.path.abspath(__file__))
+    qml_path = importlib.resources.files(__package__).joinpath("qml", "Main.qml")
+    engine.load(QUrl.fromLocalFile(str(qml_path)))
+
+    if not engine.rootObjects():
+        return -1
+    
+    sys.exit(app.exec())
+
+
 
 
 if __name__ == "__main__":

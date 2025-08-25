@@ -25,7 +25,7 @@ packages = ["ublue_updater"]
 package-dir = {"" = "src"}
 
 [tool.setuptools.package-data]
-"ublue_updater" = ["main.ui"]
+"ublue_updater" = ["main.ui", "qml/*.qml"]
 
 [project.scripts]
 ublue-updater = "ublue_updater.app:main"

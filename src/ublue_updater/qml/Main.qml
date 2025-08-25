@@ -28,7 +28,7 @@ Kirigami.ApplicationWindow {
                     id: outputText
                     readOnly: true
                     wrapMode: TextArea.Wrap
-                    placeholderText: "Output will appear here..."
+                    text: backend ? backend.outputText : "Output will appear here..."
                     background: Rectangle {
                         color: Kirigami.Theme.backgroundColor
                         border.color: Kirigami.Theme.disabledTextColor
@@ -46,7 +46,7 @@ Kirigami.ApplicationWindow {
                     text: "Change Logs"
                     Layout.fillWidth: true
                     onClicked: {
-                        outputText.text += "Change Logs clicked\n"
+                        if (backend) backend.open_logs()
                     }
                 }
 
@@ -54,7 +54,7 @@ Kirigami.ApplicationWindow {
                     text: "Update"
                     Layout.fillWidth: true
                     onClicked: {
-                        outputText.text += "Update clicked\n"
+                        if (backend) backend.activate_update()
                     }
                 }
 
@@ -62,7 +62,7 @@ Kirigami.ApplicationWindow {
                     text: "Apply Update (Reboot)"
                     Layout.fillWidth: true
                     onClicked: {
-                        outputText.text += "Update clicked\n"
+                        if (backend) backend.reboot_system()
                     }
                 }
 
@@ -70,7 +70,7 @@ Kirigami.ApplicationWindow {
                     text: "Exit"
                     Layout.fillWidth: true
                     onClicked: {
-                        Qt.quit()
+                        if (backend) backend.exit_app()
                     }
                 }
             }
