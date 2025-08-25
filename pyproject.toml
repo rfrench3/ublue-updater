@@ -20,12 +20,17 @@ dependencies = [
 Homepage = "https://github.com/rfrench3/ublue-updater"
 Repository = "https://github.com/rfrench3/ublue-updater"
 
-[tool.setuptools]
-packages = ["ublue_updater"]
-package-dir = {"" = "src"}
-
-[tool.setuptools.package-data]
-"ublue_updater" = ["main.ui", "qml/*.qml"]
-
 [project.scripts]
 ublue-updater = "ublue_updater.app:main"
+
+[tool.setuptools]
+packages = ["ublue_updater"]
+package-dir = {ublue-updater = "src"}
+include-package-data = true
+
+[tool.setuptools.data-files]
+"share/applications" = ["io.github.rfrench3.ublue-updater.desktop"]
+"share/icons/hicolor/scalable/apps" = ["io.github.rfrench3.ublue-updater.svg"]
+"share/metainfo" = ["io.github.rfrench3.ublue-updater.metainfo.xml"]
+
+

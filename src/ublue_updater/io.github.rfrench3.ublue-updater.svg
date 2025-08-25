@@ -1,0 +1,10 @@
+<!-- Created with PixiEditor (https://pixieditor.net) -->
+<svg version="1.1" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <rect x="85.59435272216797" y="128" width="67.41835294117647" height="110.15529411764703" transform="matrix(1, 0, 0, 1, 0, 0)" fill="#ac00ff" fill-opacity="1" stroke="#ac00ff" stroke-width="0" opacity="1" id="Rectangle" />
+  <rect x="20.502708435058594" y="23.815650939941406" width="76.84494209289551" height="76.84494400024414" transform="matrix(1.9856112, 1.990785, -1.9907856, 1.9856112, 134.90022, -112.888145)" fill="#ac00ff" fill-opacity="1" stroke="#ac00ff" stroke-width="0" opacity="1" id="Rectangle" />
+  <path d="" fill-rule="nonzero" transform="matrix(1, 0, 0, 1, 0, 0)" fill="#ffffff" fill-opacity="0" stroke="#ffffff" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity="1" id="New Element" />
+  <g transform="matrix(2.7789905, 0, 0, 2.7789931, -165.97403, -200.11668)">
+    <text x="81.78447058823532" y="116.57035294117641" font-size="12" font-family="Arial" font-weight="normal" font-style="normal" fill="#ffffff" stroke="#ffffff" stroke-width="0">UPDATE</text>
+    <text x="81.78447058823532" y="128.5703529411764" font-size="12" font-family="Arial" font-weight="normal" font-style="normal" fill="#ffffff" stroke="#ffffff" stroke-width="0">SYSTEM</text>
+  </g>
+</svg>
