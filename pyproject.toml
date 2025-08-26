@@ -9,11 +9,10 @@ description = "Frontend utility for the Bazzite and Universal Blue updater"
 authors = [
     { name = "Robert French", email = "frenchrobertm@outlook.com" }
 ]
-license = { file = "LICENSE" }
+license = "GPL-3.0-only"
 readme = "README.md"
 requires-python = ">=3.7"
 dependencies = [
-    "PySide6"
 ]
 
 [project.urls]
@@ -25,7 +24,7 @@ ublue-updater = "ublue_updater.app:main"
 
 [tool.setuptools]
 packages = ["ublue_updater"]
-package-dir = {ublue-updater = "src"}
+package-dir = {"ublue_updater" = "src"}
 include-package-data = true
 
 [tool.setuptools.data-files]
